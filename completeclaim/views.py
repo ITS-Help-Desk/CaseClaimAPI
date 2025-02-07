@@ -1,6 +1,11 @@
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
+
+from rest_framework.decorators import authentication_classes, permission_classes
+from rest_framework.authentication import SessionAuthentication, TokenAuthentication
+from rest_framework.permissions import IsAuthenticated
+
 from completeclaim.models import CompleteClaim
 from completeclaim.serializers import CompleteClaimSerializer
 from reviewedclaim.models import ReviewedClaim
@@ -8,16 +13,18 @@ from reviewedclaim.serializers import ReviewedClaimSerializer
 
 
 @api_view(['POST'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
 def review_complete_claim(request, pk):
     try:
         claim = CompleteClaim.objects.get(pk=pk)
-        tech = request.data.get('tech')
-        lead = request.data.get('lead')
+        tech = claim.user
+        lead = request.user
         status_value = request.data.get('status')
         comment = request.data.get('comment', '')
 
         if not tech or not lead or not status_value:
-            return Response({'error': 'Tech, lead, and status are required fields'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': 'Status are required fields'}, status=status.HTTP_400_BAD_REQUEST)
 
         new_claim = ReviewedClaim.objects.create(
             casenum=claim.casenum,
@@ -37,6 +44,8 @@ def review_complete_claim(request, pk):
         return Response({'error': 'Claim not found'}, status=status.HTTP_404_NOT_FOUND)
 
 @api_view(['GET'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
 def list_complete_claims(request):
     claims = CompleteClaim.objects.all()
     serializer = CompleteClaimSerializer(claims, many=True)
