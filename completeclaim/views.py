@@ -12,6 +12,24 @@ from reviewedclaim.models import ReviewedClaim
 from reviewedclaim.serializers import ReviewedClaimSerializer
 
 
+@api_view(['GET'])
+def get_routes(request):
+    routes = [
+        {
+            'Endpoint': '/review_complete_claim/<int:pk>/',
+            'method': 'POST',
+            'body': {'status': '', 'comment': ''},
+            'description': 'Reviews a completed claim by creating a reviewed claim.'
+        },
+        {
+            'Endpoint': '/list_complete_claims/',
+            'method': 'GET',
+            'body': None,
+            'description': 'Lists all complete claims.'
+        },
+    ]
+    return Response(routes)
+
 @api_view(['POST'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])
 @permission_classes([IsAuthenticated])
