@@ -19,19 +19,19 @@ def get_routes(request):
             'Endpoint': '/login/',
             'method': 'POST',
             'body': {'username': '', 'password': ''},
-            'description': 'Returns an authorization token'
+            'description': 'Returns an authorization token and user information'
         },
         {
             'Endpoint': '/signup/',
             'method': 'POST',
-            'body': {'username': '', 'password': '', 'email': ''},
-            'description': 'Creates a new user'
+            'body': {'username': '', 'password': '', 'email': '', 'first_name': '', 'last_name': ''},
+            'description': 'Creates a new user and returns an authorization token and user information'
         },
         {
             'Endpoint': '/test_token/',
             'method': 'GET',
             'body': None,
-            'description': 'Tests if an authorization token is valid'
+            'description': 'Tests if an authorization token is valid (replies with user\'s email)'
         },
     ]
     return Response(routes)
