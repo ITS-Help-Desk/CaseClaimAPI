@@ -10,4 +10,4 @@ class ActiveClaim(models.Model):
 
 
     def __str__(self):
-        return f"ID: {self.pk}, Casenum: {self.casenum}, User ID: {self.user.email}, Claim Time: {self.claim_time}"
+        return f"ID: {self.pk}, Casenum: {self.casenum}, User ID: {self.user_id.email}, Claim Time: {self.claim_time}"
