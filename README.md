@@ -11,12 +11,15 @@ Before contributing to this project, please contact the project manager [@Andrew
 [Python 3.11](https://www.python.org/downloads/).
 
 2. Run the following command to download the repository:
+
 `git clone https://github.com/ITS-Help-Desk/CaseClaimAPI.git`
 
 3. Run the following command to install [pipenv](https://pipenv.pypa.io/en/latest/index.html):
+
 `pip install pipenv --user`
 
 4. Once inside the repository, run the following command to install dependencies:
+
 `pipenv install`
 
 5. Once all packages are installed, create a `.env` file in the main directory to contain all necessary environment variables. An example is:
@@ -27,6 +30,7 @@ DEBUG='true'
 ```
 
 6. Run the following command to run the project:
+
 `python manage.py runserver`
 
 Once you've run this command, if everything is setup correctly, your output should look like:
