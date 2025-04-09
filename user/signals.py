@@ -5,7 +5,7 @@ from django.contrib.auth.models import Group
 
 @receiver(post_migrate)
 def create_default_groups(sender, **kwargs):
-    group_names = ["Tech", "Lead", "Phone Analyst", "Manager"]
+    group_names = ["Alumni", "Tech", "Lead", "Phone Analyst", "Manager"]
     for name in group_names:
         group, created = Group.objects.get_or_create(name=name)
         if created:
