@@ -36,7 +36,7 @@ def get_routes(request):
 def review_complete_claim(request, pk):
     try:
         claim = CompleteClaim.objects.get(pk=pk)
-        tech = claim.user
+        tech = claim.user_id
         lead = request.user
         status_value = request.data.get('status')
         comment = request.data.get('comment', '')

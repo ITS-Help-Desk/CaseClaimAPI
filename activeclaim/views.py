@@ -63,7 +63,7 @@ def complete_active_claim(request, pk):
 
         new_claim = CompleteClaim.objects.create(
             casenum=claim.casenum,
-            user=claim.user,
+            user_id=claim.user_id,
             claim_time=claim.claim_time
         )
         claim.delete()
