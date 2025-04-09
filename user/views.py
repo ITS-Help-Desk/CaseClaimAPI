@@ -12,6 +12,7 @@ from django.shortcuts import get_object_or_404
 
 from .serializers import UserSerializer
 
+
 @api_view(['GET'])
 def get_routes(request):
     routes = [
