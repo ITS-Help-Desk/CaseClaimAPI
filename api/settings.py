@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'completeclaim.apps.CompleteclaimConfig',
     'reviewedclaim.apps.ReviewedclaimConfig',
     'user.apps.UserConfig',
+    'parentcase.apps.ParentcaseConfig',
     
     'rest_framework',
     'rest_framework.authtoken',
