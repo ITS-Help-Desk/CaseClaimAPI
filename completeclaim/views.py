@@ -6,6 +6,8 @@ from rest_framework.decorators import authentication_classes, permission_classes
 from rest_framework.authentication import SessionAuthentication, TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 
+from user.decorators import group_required
+
 from completeclaim.models import CompleteClaim
 from completeclaim.serializers import CompleteClaimSerializer
 from reviewedclaim.models import ReviewedClaim
@@ -33,10 +35,11 @@ def get_routes(request):
 @api_view(['POST'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])
 @permission_classes([IsAuthenticated])
+@group_required('Lead')
 def review_complete_claim(request, pk):
     try:
         claim = CompleteClaim.objects.get(pk=pk)
-        tech = claim.user
+        tech = claim.user_id
         lead = request.user
         status_value = request.data.get('status')
         comment = request.data.get('comment', '')
@@ -64,6 +67,7 @@ def review_complete_claim(request, pk):
 @api_view(['GET'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])
 @permission_classes([IsAuthenticated])
+@group_required('Lead')
 def list_complete_claims(request):
     claims = CompleteClaim.objects.all()
     serializer = CompleteClaimSerializer(claims, many=True)

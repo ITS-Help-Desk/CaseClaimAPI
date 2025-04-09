@@ -6,6 +6,8 @@ from rest_framework.decorators import authentication_classes, permission_classes
 from rest_framework.authentication import SessionAuthentication, TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 
+from user.decorators import group_required
+
 from reviewedclaim.models import ReviewedClaim
 from reviewedclaim.serializers import ReviewedClaimSerializer
 
@@ -25,6 +27,7 @@ def get_routes(request):
 @api_view(['GET'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])
 @permission_classes([IsAuthenticated])
+@group_required('Lead')
 def list_reviewed_claims(request):
     claims = ReviewedClaim.objects.all()
     serializer = ReviewedClaimSerializer(claims, many=True)

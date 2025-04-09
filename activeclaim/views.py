@@ -7,6 +7,8 @@ from rest_framework.decorators import authentication_classes, permission_classes
 from rest_framework.authentication import SessionAuthentication, TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 
+from user.decorators import group_required
+
 from activeclaim.models import ActiveClaim
 from activeclaim.serializers import ActiveClaimSerializer
 from completeclaim.models import CompleteClaim
@@ -40,11 +42,12 @@ def get_routes(request):
 @api_view(['POST'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])
 @permission_classes([IsAuthenticated])
+@group_required('Tech')
 def create_active_claim(request, pk):
     if ActiveClaim.objects.filter(casenum=pk).exists():
         return Response("Casenum already exists.", status=400)
     
-    claim = ActiveClaim.objects.create(user=request.user, casenum=pk)
+    claim = ActiveClaim.objects.create(user_id=request.user, casenum=pk)
 
     serializer = ActiveClaimSerializer(claim)
 
@@ -53,13 +56,14 @@ def create_active_claim(request, pk):
 @api_view(['DELETE'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])
 @permission_classes([IsAuthenticated])
+@group_required('Tech')
 def complete_active_claim(request, pk):
     try:
         claim = ActiveClaim.objects.get(casenum=pk)
 
         new_claim = CompleteClaim.objects.create(
             casenum=claim.casenum,
-            user=claim.user,
+            user_id=claim.user_id,
             claim_time=claim.claim_time
         )
         claim.delete()
@@ -72,6 +76,7 @@ def complete_active_claim(request, pk):
 @api_view(['GET'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])
 @permission_classes([IsAuthenticated])
+@group_required('Tech')
 def list_active_claims(request):
     claims = ActiveClaim.objects.all()
     serializer = ActiveClaimSerializer(claims, many=True)
