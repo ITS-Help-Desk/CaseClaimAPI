@@ -3,7 +3,7 @@ from django.db import models
 
 # Create your models here.
 class ParentCase(models.Model):
-    case_number = models.CharField(unique=False, max_length=8)
+    case_number = models.CharField(unique=True, max_length=8)
     description = models.TextField()
     solution = models.TextField(null=True)
     active = models.BooleanField(default=True)
