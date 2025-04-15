@@ -9,6 +9,51 @@ from rest_framework.permissions import IsAuthenticated
 from parentcase.models import ParentCase
 from parentcase.serializers import ParentCaseSerializer
 
+
+@api_view(['GET'])
+def get_routes(request):
+    routes = [
+        {
+            'Endpoint': '/parentcase/active/',
+            'method': 'GET',
+            'body': None,
+            'description': 'Retrieve all active parent cases.'
+        },
+        {
+            'Endpoint': '/parentcase/all/',
+            'method': 'GET',
+            'body': None,
+            'description': 'Retrieve all parent cases, regardless of active status.'
+        },
+        {
+            'Endpoint': '/parentcase/create/',
+            'method': 'POST',
+            'body': {
+                'case_number': '',
+                'description': '',
+                'solution': ''
+            },
+            'description': 'Create a new parent case.'
+        },
+        {
+            'Endpoint': '/parentcase/set_inactive/<str:case_num>/',
+            'method': 'POST',
+            'body': None,
+            'description': 'Set a parent case to inactive by case number.'
+        },
+        {
+            'Endpoint': '/parentcase/update/<str:case_num>/',
+            'method': 'POST',
+            'body': {
+                'description': '',
+                'solution': '',
+                'active': True
+            },
+            'description': 'Update an existing parent case by case number.'
+        },
+    ]
+    return Response(routes)
+
 @api_view(['GET'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])
 @permission_classes([IsAuthenticated])
@@ -84,11 +129,12 @@ def create_parent_case(request):
             case_number = request.data.get('case_number'),
             description = request.data.get('description'),
             solution = solution,
-            user = request.user
+            user_id = request.user
         )
         serialized = ParentCaseSerializer(created_case)
         return Response(serialized.data, status=status.HTTP_201_CREATED)
     except Exception as e:
+        print(e)
         return Response({'error': 'Unable to create parent case'}, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['POST'])

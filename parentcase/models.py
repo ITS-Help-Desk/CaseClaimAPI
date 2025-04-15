@@ -1,5 +1,5 @@
 from django.db import models
-#from .user.models import User
+from django.contrib.auth.models import User
 
 # Create your models here.
 class ParentCase(models.Model):
@@ -8,6 +8,8 @@ class ParentCase(models.Model):
     solution = models.TextField(null=True)
     active = models.BooleanField(default=True)
     time_created = models.DateTimeField(auto_now_add=True)
-    user = models.TextField()
-    #user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
-    #This line needs to be added in when we actually have a user model to go off of.
+    user_id = models.ForeignKey(User, on_delete=models.CASCADE)
+    
+    
+    def __str__(self):
+        return f"ID: {self.pk}, Casenum: {self.case_number}, User ID: {self.user_id}, Description: {self.description}"
