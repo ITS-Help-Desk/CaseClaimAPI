@@ -49,8 +49,8 @@ def review_complete_claim(request, pk):
 
         new_claim = ReviewedClaim.objects.create(
             casenum=claim.casenum,
-            tech=tech,
-            lead=lead,
+            tech_id=tech,
+            lead_id=lead,
             claim_time=claim.claim_time,
             complete_time=claim.complete_time,
             status=status_value,
