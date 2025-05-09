@@ -81,3 +81,22 @@ def list_active_claims(request):
     claims = ActiveClaim.objects.all()
     serializer = ActiveClaimSerializer(claims, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
+
+@api_view(['DELETE'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def unclaim_active_claim(request, pk):
+    try:
+        claim = ActiveClaim.objects.get(casenum=pk)
+
+        # Check permissions: Leads can unclaim any, Techs can only unclaim their own
+        is_lead = request.user.groups.filter(name='Lead').exists()
+        is_owner = claim.user_id == request.user
+
+        if not (is_lead or is_owner):
+            return Response({'error': 'Permission denied. You can only unclaim your own cases.'}, status=status.HTTP_403_FORBIDDEN)
+
+        claim.delete()
+        return Response({'message': 'Claim successfully unclaimed.'}, status=status.HTTP_204_NO_CONTENT)
+    except ActiveClaim.DoesNotExist:
+        return Response({'error': 'Claim not found'}, status=status.HTTP_404_NOT_FOUND)
