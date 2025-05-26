@@ -2,6 +2,8 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 
 from rest_framework.decorators import authentication_classes, permission_classes
 from rest_framework.authentication import SessionAuthentication, TokenAuthentication
@@ -50,6 +52,17 @@ def create_active_claim(request, pk):
     claim = ActiveClaim.objects.create(user_id=request.user, casenum=pk)
 
     serializer = ActiveClaimSerializer(claim)
+
+    # Notify WebSocket
+    async_to_sync(get_channel_layer().group_send)(
+        "cases",
+        {
+            "type": "case.update",
+            "event": "claimed",
+            "casenum": claim.casenum,
+            "user": claim.user_id.username
+        }
+    )
 
     return Response(serializer.data, status=status.HTTP_201_CREATED)
     
