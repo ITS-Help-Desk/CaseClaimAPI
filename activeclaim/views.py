@@ -55,10 +55,10 @@ def create_active_claim(request, pk):
 
     # Notify WebSocket
     async_to_sync(get_channel_layer().group_send)(
-        "cases",
+        "caseflow",
         {
-            "type": "case.update",
-            "event": "claimed",
+            "type": "activeclaim",
+            "event": "claim",
             "casenum": claim.casenum,
             "user": claim.user_id.username
         }
@@ -82,6 +82,18 @@ def complete_active_claim(request, pk):
         claim.delete()
 
         serializer = CompleteClaimSerializer(new_claim)
+
+        # Notify WebSocket
+        async_to_sync(get_channel_layer().group_send)(
+            "caseflow",
+            {
+                "type": "activeclaim",
+                "event": "complete",
+                "casenum": claim.casenum,
+                "user": claim.user_id.username
+            }
+        )
+
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     except ActiveClaim.DoesNotExist:
         return Response({'error': 'Claim not found'}, status=status.HTTP_404_NOT_FOUND)
@@ -110,6 +122,18 @@ def unclaim_active_claim(request, pk):
             return Response({'error': 'Permission denied. You can only unclaim your own cases.'}, status=status.HTTP_403_FORBIDDEN)
 
         claim.delete()
+
+        # Notify WebSocket
+        async_to_sync(get_channel_layer().group_send)(
+            "caseflow",
+            {
+                "type": "activeclaim",
+                "event": "unclaimed",
+                "casenum": claim.casenum,
+                "user": claim.user_id.username
+            }
+        )
+
         return Response({'message': 'Claim successfully unclaimed.'}, status=status.HTTP_204_NO_CONTENT)
     except ActiveClaim.DoesNotExist:
         return Response({'error': 'Claim not found'}, status=status.HTTP_404_NOT_FOUND)
