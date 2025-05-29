@@ -2,6 +2,9 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
+
 from rest_framework.decorators import authentication_classes, permission_classes
 from rest_framework.authentication import SessionAuthentication, TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
@@ -60,6 +63,18 @@ def review_complete_claim(request, pk):
         claim.delete()
 
         serializer = ReviewedClaimSerializer(new_claim)
+
+        # Notify WebSocket
+        async_to_sync(get_channel_layer().group_send)(
+            "caseflow",
+            {
+                "type": "completeclaim",
+                "event": "review",
+                "casenum": claim.casenum,
+                "user": claim.user_id.username
+            }
+        )
+        
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     except CompleteClaim.DoesNotExist:
         return Response({'error': 'Claim not found'}, status=status.HTTP_404_NOT_FOUND)

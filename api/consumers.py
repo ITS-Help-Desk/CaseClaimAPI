@@ -11,3 +11,6 @@ class Consumer(AsyncWebsocketConsumer):
 
     async def activeclaim(self, event):
         await self.send(text_data=json.dumps(event))
+    
+    async def completeclaim(self, event):
+        await self.send(text_data=json.dumps(event))
