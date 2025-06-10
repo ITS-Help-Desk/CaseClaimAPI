@@ -27,6 +27,12 @@ def get_routes(request):
             'description': 'Reviews a completed claim by creating a reviewed claim.'
         },
         {
+            'Endpoint': '/begin-review/<int:pk>/',
+            'method': 'POST',
+            'body': None,
+            'description': 'Begins a review of a claim (prevents other leads from reviewing).'
+        },
+        {
             'Endpoint': '/list_complete_claims/',
             'method': 'GET',
             'body': None,
@@ -34,6 +40,33 @@ def get_routes(request):
         },
     ]
     return Response(routes)
+
+@api_view(['POST'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+@group_required('Lead')
+def begin_review(request, pk):
+    try:
+        claim = CompleteClaim.objects.get(pk=pk)
+        claim.lead_id = request.user
+        claim.save()
+
+        serializer = CompleteClaimSerializer(claim)
+
+        # Notify WebSocket
+        async_to_sync(get_channel_layer().group_send)(
+            "caseflow",
+            {
+                "type": "completeclaim",
+                "event": "begin-review",
+                "casenum": claim.casenum,
+                "user": claim.lead_id.username
+            }
+        )
+        
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    except CompleteClaim.DoesNotExist:
+        return Response({'error': 'Claim not found'}, status=status.HTTP_404_NOT_FOUND)
 
 @api_view(['POST'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])
@@ -71,7 +104,7 @@ def review_complete_claim(request, pk):
                 "type": "completeclaim",
                 "event": "review",
                 "casenum": claim.casenum,
-                "user": claim.user_id.username
+                "user": claim.lead_id.username
             }
         )
         
