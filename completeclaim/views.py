@@ -103,8 +103,8 @@ def review_complete_claim(request, pk):
             {
                 "type": "completeclaim",
                 "event": "review",
-                "casenum": claim.casenum,
-                "user": claim.lead_id.username
+                "casenum": new_claim.casenum,
+                "user": new_claim.lead_id.username
             }
         )
         
