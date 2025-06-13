@@ -4,8 +4,8 @@ from django.contrib.auth.models import User
 
 class ReviewedClaim(models.Model):
     casenum = models.CharField(max_length=8)
-    tech_id = models.ForeignKey(User, on_delete=models.CASCADE, related_name="tech")
-    lead_id = models.ForeignKey(User, on_delete=models.CASCADE, related_name="lead")
+    tech_id = models.ForeignKey(User, on_delete=models.CASCADE, related_name="review_tech")
+    lead_id = models.ForeignKey(User, on_delete=models.CASCADE, related_name="review_lead")
 
     claim_time = models.DateTimeField()
     complete_time = models.DateTimeField()

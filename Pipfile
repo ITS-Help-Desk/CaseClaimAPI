@@ -8,6 +8,10 @@ django = "*"
 djangorestframework = "*"
 django-cors-headers = "*"
 dotenv = "*"
+channels = "*"
+python-dotenv = "*"
+daphne = "*"
+websockets = "*"
 
 [dev-packages]
 

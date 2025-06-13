@@ -2,6 +2,8 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 
 from rest_framework.decorators import authentication_classes, permission_classes
 from rest_framework.authentication import SessionAuthentication, TokenAuthentication
@@ -51,6 +53,17 @@ def create_active_claim(request, pk):
 
     serializer = ActiveClaimSerializer(claim)
 
+    # Notify WebSocket
+    async_to_sync(get_channel_layer().group_send)(
+        "caseflow",
+        {
+            "type": "activeclaim",
+            "event": "claim",
+            "casenum": claim.casenum,
+            "user": claim.user_id.username
+        }
+    )
+
     return Response(serializer.data, status=status.HTTP_201_CREATED)
     
 @api_view(['DELETE'])
@@ -69,6 +82,18 @@ def complete_active_claim(request, pk):
         claim.delete()
 
         serializer = CompleteClaimSerializer(new_claim)
+
+        # Notify WebSocket
+        async_to_sync(get_channel_layer().group_send)(
+            "caseflow",
+            {
+                "type": "activeclaim",
+                "event": "complete",
+                "casenum": claim.casenum,
+                "user": claim.user_id.username
+            }
+        )
+
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     except ActiveClaim.DoesNotExist:
         return Response({'error': 'Claim not found'}, status=status.HTTP_404_NOT_FOUND)
@@ -97,6 +122,18 @@ def unclaim_active_claim(request, pk):
             return Response({'error': 'Permission denied. You can only unclaim your own cases.'}, status=status.HTTP_403_FORBIDDEN)
 
         claim.delete()
+
+        # Notify WebSocket
+        async_to_sync(get_channel_layer().group_send)(
+            "caseflow",
+            {
+                "type": "activeclaim",
+                "event": "unclaimed",
+                "casenum": claim.casenum,
+                "user": claim.user_id.username
+            }
+        )
+
         return Response({'message': 'Claim successfully unclaimed.'}, status=status.HTTP_204_NO_CONTENT)
     except ActiveClaim.DoesNotExist:
         return Response({'error': 'Claim not found'}, status=status.HTTP_404_NOT_FOUND)

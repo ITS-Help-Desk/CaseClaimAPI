@@ -31,18 +31,14 @@ DEBUG='true'
 
 6. Run the following command to run the project:
 
-`python manage.py runserver`
+`daphne -p 8000 api.asgi:application`
 
 Once you've run this command, if everything is setup correctly, your output should look like:
 ```
-Watching for file changes with StatReloader
-Performing system checks...
-
-System check identified no issues (0 silenced).
-March 28, 2025 - 22:58:28
-Django version 5.1.7, using settings 'api.settings'
-Starting development server at http://127.0.0.1:8000/
-Quit the server with CONTROL-C.
+2025-05-29 18:35:45,318 INFO     Starting server at tcp:port=8000:interface=127.0.0.1
+2025-05-29 18:35:45,319 INFO     HTTP/2 support not enabled (install the http2 and tls Twisted extras)
+2025-05-29 18:35:45,319 INFO     Configuring endpoint tcp:port=8000:interface=127.0.0.1
+2025-05-29 18:35:45,319 INFO     Listening on TCP address 127.0.0.1:8000
 ```
 
 ## Dependencies
