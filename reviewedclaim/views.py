@@ -19,7 +19,7 @@ from reviewedclaim.serializers import ReviewedClaimSerializer
 def get_routes(request):
     routes = [
         {
-            'Endpoint': '/list_reviewed_claims/',
+            'Endpoint': '/list/',
             'method': 'GET',
             'body': None,
             'description': 'Lists all reviewed claims.'
