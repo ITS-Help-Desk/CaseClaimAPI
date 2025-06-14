@@ -21,7 +21,7 @@ from reviewedclaim.serializers import ReviewedClaimSerializer
 def get_routes(request):
     routes = [
         {
-            'Endpoint': '/review_complete_claim/<int:pk>/',
+            'Endpoint': '/review/<int:pk>/',
             'method': 'POST',
             'body': {'status': '', 'comment': ''},
             'description': 'Reviews a completed claim by creating a reviewed claim.'
@@ -33,7 +33,7 @@ def get_routes(request):
             'description': 'Begins a review of a claim (prevents other leads from reviewing).'
         },
         {
-            'Endpoint': '/list_complete_claims/',
+            'Endpoint': '/list/',
             'method': 'GET',
             'body': None,
             'description': 'Lists all complete claims.'
@@ -103,8 +103,8 @@ def review_complete_claim(request, pk):
             {
                 "type": "completeclaim",
                 "event": "review",
-                "casenum": claim.casenum,
-                "user": claim.lead_id.username
+                "casenum": new_claim.casenum,
+                "user": new_claim.lead_id.username
             }
         )
         

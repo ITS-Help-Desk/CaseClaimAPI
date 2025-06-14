@@ -21,19 +21,25 @@ from completeclaim.serializers import CompleteClaimSerializer
 def get_routes(request):
     routes = [
         {
-            'Endpoint': '/create_active_claim/<str:pk>/',
+            'Endpoint': '/create/<str:pk>/',
             'method': 'POST',
             'body': {'casenum': ''},
             'description': 'Creates a new active claim if the case number does not already exist.'
         },
         {
-            'Endpoint': '/complete_active_claim/<str:pk>/',
+            'Endpoint': '/complete/<str:pk>/',
             'method': 'DELETE',
             'body': None,
             'description': 'Marks an active claim as complete and moves it to the complete claims table.'
         },
         {
-            'Endpoint': '/list_active_claims/',
+            'Endpoint': '/unclaim/<str:pk>/',
+            'method': 'DELETE',
+            'body': None,
+            'description': 'Deletes the active claim from the database.'
+        },
+        {
+            'Endpoint': '/list/',
             'method': 'GET',
             'body': None,
             'description': 'Lists all active claims.'
