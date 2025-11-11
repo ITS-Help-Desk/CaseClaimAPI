@@ -107,7 +107,7 @@ def complete_active_claim(request, pk):
 @api_view(['GET'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])
 @permission_classes([IsAuthenticated])
-@group_required('Tech')
+@group_required(['Tech', 'Lead', 'Phone Analyst', 'Manager'])
 def list_active_claims(request):
     claims = ActiveClaim.objects.all()
     serializer = ActiveClaimSerializer(claims, many=True)
