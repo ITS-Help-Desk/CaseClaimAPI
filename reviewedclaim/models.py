@@ -17,11 +17,17 @@ class ReviewedClaim(models.Model):
         ('pingedlow', 'Pinged - Low'),
         ('pingedmed', 'Pinged - Medium'),
         ('pingedhigh', 'Pinged - High'),
+        ('acknowledged', 'Acknowledged'),
         ('resolved', 'Resolved'),
         ('kudos', 'Kudos'),
     ])
 
     comment = models.TextField()
+    
+    # Acknowledgment fields (for ping workflow)
+    acknowledged_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="acknowledged_claims")
+    acknowledge_time = models.DateTimeField(null=True, blank=True)
+    acknowledge_comment = models.TextField(blank=True, default='')
 
 
     def __str__(self):
