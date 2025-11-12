@@ -24,7 +24,7 @@ def get_routes(request):
             'Endpoint': '/review/<int:pk>/',
             'method': 'POST',
             'body': {'status': '', 'comment': ''},
-            'description': 'Reviews a completed claim by creating a reviewed claim.'
+            'description': 'Reviews a completed claim by creating a reviewed claim. Supports all statuses: checked, done, pingedlow, pingedmed, pingedhigh, acknowledged, resolved, kudos.'
         },
         {
             'Endpoint': '/begin-review/<int:pk>/',
