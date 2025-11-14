@@ -24,9 +24,7 @@ class ReviewedClaim(models.Model):
 
     comment = models.TextField()
     
-    # Acknowledgment fields (for ping workflow)
-    acknowledged_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="acknowledged_claims")
-    acknowledge_time = models.DateTimeField(null=True, blank=True)
+    # Acknowledgment field (for ping workflow - optional comment when acknowledging)
     acknowledge_comment = models.TextField(blank=True, default='')
 
 

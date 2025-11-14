@@ -10,7 +10,6 @@ from user.decorators import group_required
 
 from django.contrib.auth.models import User
 from django.db.models import Q
-from django.utils import timezone
 
 from reviewedclaim.models import ReviewedClaim
 from reviewedclaim.serializers import ReviewedClaimSerializer
@@ -105,8 +104,6 @@ def acknowledge_ping(request, pk):
         
         # Update the claim
         claim.status = 'acknowledged'
-        claim.acknowledged_by = request.user
-        claim.acknowledge_time = timezone.now()
         claim.acknowledge_comment = request.data.get('acknowledge_comment', '')
         claim.save()
         

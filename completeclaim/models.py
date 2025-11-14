@@ -14,4 +14,6 @@ class CompleteClaim(models.Model):
 
 
     def __str__(self):
-        return f"ID: {self.pk}, Casenum: {self.casenum}, User: {self.user_id.email}, Lead: {self.lead_id.email}, Claim Time: {self.claim_time}, Complete Time: {self.complete_time}"
+        lead_email = self.lead_id.email if self.lead_id else 'No Lead'
+        user_email = self.user_id.email if self.user_id else 'No User'
+        return f"ID: {self.pk}, Casenum: {self.casenum}, User: {user_email}, Lead: {lead_email}, Claim Time: {self.claim_time}, Complete Time: {self.complete_time}"
