@@ -9,7 +9,7 @@ from rest_framework.decorators import authentication_classes, permission_classes
 from rest_framework.authentication import SessionAuthentication, TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 
-from user.decorators import group_required
+from user.decorators import group_required, role_required
 
 from activeclaim.models import ActiveClaim
 from activeclaim.serializers import ActiveClaimSerializer
@@ -50,7 +50,7 @@ def get_routes(request):
 @api_view(['POST'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])
 @permission_classes([IsAuthenticated])
-@group_required('Tech')
+@role_required('Tech')  # Tech and above (hierarchical)
 def create_active_claim(request, pk):
     if ActiveClaim.objects.filter(casenum=pk).exists():
         return Response("Casenum already exists.", status=400)
@@ -75,7 +75,7 @@ def create_active_claim(request, pk):
 @api_view(['DELETE'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])
 @permission_classes([IsAuthenticated])
-@group_required('Tech')
+@role_required('Tech')  # Tech and above (hierarchical)
 def complete_active_claim(request, pk):
     try:
         claim = ActiveClaim.objects.get(casenum=pk)
@@ -107,7 +107,7 @@ def complete_active_claim(request, pk):
 @api_view(['GET'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])
 @permission_classes([IsAuthenticated])
-@group_required(['Tech', 'Lead', 'Phone Analyst', 'Manager'])
+@role_required('Tech')  # Tech and above (hierarchical)
 def list_active_claims(request):
     claims = ActiveClaim.objects.all()
     serializer = ActiveClaimSerializer(claims, many=True)
@@ -120,11 +120,14 @@ def unclaim_active_claim(request, pk):
     try:
         claim = ActiveClaim.objects.get(casenum=pk)
 
-        # Check permissions: Leads can unclaim any, Techs can only unclaim their own
-        is_lead = request.user.groups.filter(name='Lead').exists()
+        # Check permissions: Lead+ can unclaim any, Techs can only unclaim their own
+        from user.decorators import get_user_highest_role_level, ROLE_HIERARCHY
+        user_level = get_user_highest_role_level(request.user)
+        lead_level = ROLE_HIERARCHY.get('Lead', 0)
+        is_lead_or_above = user_level >= lead_level
         is_owner = claim.user_id == request.user
 
-        if not (is_lead or is_owner):
+        if not (is_lead_or_above or is_owner):
             return Response({'error': 'Permission denied. You can only unclaim your own cases.'}, status=status.HTTP_403_FORBIDDEN)
 
         claim.delete()
