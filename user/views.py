@@ -101,12 +101,8 @@ def signup(request):
         user.set_password(request.data['password'])
         user.save()
         
-        # Assign 'Tech' role by default
-        try:
-            tech_group = Group.objects.get(name='Tech')
-            user.groups.add(tech_group)
-        except Group.DoesNotExist:
-            print("'Tech' group does not exist. Please ensure migrations have been run.")
+        # New users start with NO roles - roles must be assigned by Lead/Manager
+        # No automatic role assignment
 
         token = Token.objects.create(user=user)
         return Response({"token": token.key, "user": serializer.data})
