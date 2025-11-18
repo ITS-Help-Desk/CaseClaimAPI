@@ -9,7 +9,7 @@ from rest_framework.decorators import authentication_classes, permission_classes
 from rest_framework.authentication import SessionAuthentication, TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 
-from user.decorators import group_required
+from user.decorators import group_required, role_required
 
 from completeclaim.models import CompleteClaim
 from completeclaim.serializers import CompleteClaimSerializer
@@ -44,7 +44,7 @@ def get_routes(request):
 @api_view(['POST'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])
 @permission_classes([IsAuthenticated])
-@group_required('Lead')
+@role_required('Lead')  # Lead and above (hierarchical)
 def begin_review(request, pk):
     try:
         claim = CompleteClaim.objects.get(pk=pk)
@@ -71,7 +71,7 @@ def begin_review(request, pk):
 @api_view(['POST'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])
 @permission_classes([IsAuthenticated])
-@group_required('Lead')
+@role_required('Lead')  # Lead and above (hierarchical)
 def review_complete_claim(request, pk):
     try:
         claim = CompleteClaim.objects.get(pk=pk)
@@ -115,7 +115,7 @@ def review_complete_claim(request, pk):
 @api_view(['GET'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])
 @permission_classes([IsAuthenticated])
-@group_required('Lead')
+@role_required('Lead')  # Lead and above (hierarchical)
 def list_complete_claims(request):
     claims = CompleteClaim.objects.all()
     serializer = CompleteClaimSerializer(claims, many=True)

@@ -6,7 +6,7 @@ from rest_framework.decorators import authentication_classes, permission_classes
 from rest_framework.authentication import SessionAuthentication, TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 
-from user.decorators import group_required
+from user.decorators import group_required, role_required, get_user_highest_role_level, ROLE_HIERARCHY
 
 from django.contrib.auth.models import User
 from django.db.models import Q
@@ -51,8 +51,12 @@ def get_routes(request):
 def get_pings_for_user(request, pk):
     user =  User.objects.get(pk=pk)
 
-    is_lead = request.user.groups.filter(name='Lead').exists()
-    if not is_lead and request.user != user:
+    # Check if user has Lead or above permission (hierarchical)
+    user_level = get_user_highest_role_level(request.user)
+    lead_level = ROLE_HIERARCHY.get('Lead', 0)
+    is_lead_or_above = user_level >= lead_level
+    
+    if not is_lead_or_above and request.user != user:
         return Response(
             {"detail": "You do not have permission to view this user's pings."},
             status=status.HTTP_403_FORBIDDEN
@@ -70,7 +74,7 @@ def get_pings_for_user(request, pk):
 @api_view(['GET'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])
 @permission_classes([IsAuthenticated])
-@group_required('Lead')
+@role_required('Lead')  # Lead and above (hierarchical)
 def list_reviewed_claims(request):
     claims = ReviewedClaim.objects.all()
     serializer = ReviewedClaimSerializer(claims, many=True)
@@ -79,7 +83,7 @@ def list_reviewed_claims(request):
 @api_view(['POST'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])
 @permission_classes([IsAuthenticated])
-@group_required('Tech')
+@role_required('Tech')  # Tech and above (hierarchical)
 def acknowledge_ping(request, pk):
     """
     Allows a Tech to acknowledge a ping (only their own pings).
@@ -116,7 +120,7 @@ def acknowledge_ping(request, pk):
 @api_view(['POST'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])
 @permission_classes([IsAuthenticated])
-@group_required('Lead')
+@role_required('Lead')  # Lead and above (hierarchical)
 def resolve_ping(request, pk):
     """
     Allows a Lead to mark an acknowledged ping as resolved.
