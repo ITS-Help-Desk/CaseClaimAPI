@@ -10,7 +10,7 @@ from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth.models import User, Group
 from django.shortcuts import get_object_or_404
 
-from user.decorators import group_required
+from user.decorators import group_required, role_required
 
 from .serializers import UserSerializer
 from .serializers import GroupSerializer
@@ -59,7 +59,7 @@ def list_users(request):
 @api_view(['POST'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])
 @permission_classes([IsAuthenticated])
-@group_required(['Lead', 'Phone Analyst', 'Manager'])
+@role_required('Lead')  # Lead and above (Lead, Phone Analyst, Manager)
 def edit_user_roles(request, pk):
     try:
         user = User.objects.get(pk=pk)
