@@ -42,6 +42,17 @@ def get_routes(request):
             'body': None,
             'description': 'Marks an acknowledged ping as resolved (Lead only).'
         },
+        {
+            'Endpoint': '/create-ping/',
+            'method': 'POST',
+            'body': {
+                'casenum': 'case number',
+                'tech_id': 'user id of the tech to ping',
+                'severity': 'pingedlow | pingedmed | pingedhigh',
+                'comment': 'description of the issue'
+            },
+            'description': 'Creates a manual ping without going through the review workflow (Lead only).'
+        },
     ]
     return Response(routes)
 
@@ -145,3 +156,73 @@ def resolve_ping(request, pk):
         
     except ReviewedClaim.DoesNotExist:
         return Response({'error': 'Ping not found'}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['POST'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+@role_required('Lead')  # Lead and above (hierarchical)
+def create_manual_ping(request):
+    """
+    Creates a manual ping without going through the normal review workflow.
+    
+    This allows leads to ping a tech about a case directly, useful for:
+    - Cases from external sources
+    - Follow-up issues discovered later
+    - Quality coaching outside the normal review process
+    
+    Required fields:
+        - casenum: The case number
+        - tech_id: User ID of the tech to ping
+        - severity: 'pingedlow', 'pingedmed', or 'pingedhigh'
+        - comment: Description of the issue
+    """
+    from django.utils import timezone
+    
+    # Validate required fields
+    required_fields = ['casenum', 'tech_id', 'severity', 'comment']
+    missing_fields = [f for f in required_fields if f not in request.data]
+    
+    if missing_fields:
+        return Response(
+            {'error': f'Missing required fields: {", ".join(missing_fields)}'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    casenum = request.data.get('casenum')
+    tech_id = request.data.get('tech_id')
+    severity = request.data.get('severity')
+    comment = request.data.get('comment')
+    
+    # Validate severity
+    valid_severities = ['pingedlow', 'pingedmed', 'pingedhigh']
+    if severity not in valid_severities:
+        return Response(
+            {'error': f'Invalid severity. Must be one of: {", ".join(valid_severities)}'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    # Validate tech exists
+    try:
+        tech = User.objects.get(pk=tech_id)
+    except User.DoesNotExist:
+        return Response(
+            {'error': 'Tech user not found'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    
+    # Create the ping (as a ReviewedClaim)
+    now = timezone.now()
+    
+    ping = ReviewedClaim.objects.create(
+        casenum=casenum,
+        tech_id=tech,
+        lead_id=request.user,  # The lead creating the ping
+        claim_time=now,  # For manual pings, we use current time
+        complete_time=now,
+        status=severity,
+        comment=comment
+    )
+    
+    serializer = ReviewedClaimSerializer(ping)
+    return Response(serializer.data, status=status.HTTP_201_CREATED)
