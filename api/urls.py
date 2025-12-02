@@ -10,7 +10,12 @@ urlpatterns = [
     path('api/activeclaim/', include('activeclaim.urls')),
     path('api/completeclaim/', include('completeclaim.urls')),
     path('api/reviewedclaim/', include('reviewedclaim.urls')),
-    path('api/parentcase/', include('parentcase.urls'))
+    path('api/parentcase/', include('parentcase.urls')),
+    
+    # New feature endpoints (Lead+ only)
+    path('api/caselookup/', include('caselookup.urls')),
+    path('api/reports/', include('reports.urls')),
+    path('api/evaluation/', include('evaluation.urls')),
 ]
 
 # Serve static CSS for admin page

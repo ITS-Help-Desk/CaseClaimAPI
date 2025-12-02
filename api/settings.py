@@ -50,6 +50,11 @@ INSTALLED_APPS = [
     'user.apps.UserConfig',
     'parentcase.apps.ParentcaseConfig',
     
+    # New apps for extended features
+    'caselookup.apps.CaselookupConfig',
+    'reports.apps.ReportsConfig',
+    'evaluation.apps.EvaluationConfig',
+    
     'rest_framework',
     'rest_framework.authtoken',
     'corsheaders',
