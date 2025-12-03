@@ -10,5 +10,6 @@ urlpatterns = [
     path('update/<int:pk>/', views.update_evaluation),
     path('delete/<int:pk>/', views.delete_evaluation),
     path('generate/<int:user_id>/', views.generate_evaluation_data),
+    path('geneval/', views.geneval),  # Auto-generate evaluations ZIP
 ]
 
