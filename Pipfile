@@ -12,6 +12,7 @@ channels = "*"
 python-dotenv = "*"
 daphne = "*"
 websockets = "*"
+python-docx = "*"
 
 [dev-packages]
 
