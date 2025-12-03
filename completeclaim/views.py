@@ -120,3 +120,18 @@ def list_complete_claims(request):
     claims = CompleteClaim.objects.all()
     serializer = CompleteClaimSerializer(claims, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
+
+@api_view(['DELETE'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+@role_required('Lead')  # Lead and above (hierarchical)
+def delete_complete_claim(request, pk):
+    """
+    Delete a CompleteClaim (used after creating a manual ping)
+    """
+    try:
+        claim = CompleteClaim.objects.get(pk=pk)
+        claim.delete()
+        return Response({'message': 'CompleteClaim deleted successfully'}, status=status.HTTP_200_OK)
+    except CompleteClaim.DoesNotExist:
+        return Response({'error': 'Claim not found'}, status=status.HTTP_404_NOT_FOUND)

@@ -6,4 +6,5 @@ urlpatterns = [
     path('begin-review/<int:pk>/', views.begin_review),
     path('review/<int:pk>/', views.review_complete_claim),
     path('list/', views.list_complete_claims),
+    path('<int:pk>/', views.delete_complete_claim),
 ]

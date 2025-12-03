@@ -220,6 +220,7 @@ def create_manual_ping(request):
         lead_id=request.user,  # The lead creating the ping
         claim_time=now,  # For manual pings, we use current time
         complete_time=now,
+        review_time=now,  # Set review_time so it shows up with correct timestamp
         status=severity,
         comment=comment
     )
