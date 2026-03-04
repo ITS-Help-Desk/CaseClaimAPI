@@ -14,19 +14,19 @@ from parentcase.serializers import ParentCaseSerializer
 def get_routes(request):
     routes = [
         {
-            'Endpoint': '/parentcase/active/',
+            'Endpoint': '/active/',
             'method': 'GET',
             'body': None,
             'description': 'Retrieve all active parent cases.'
         },
         {
-            'Endpoint': '/parentcase/all/',
+            'Endpoint': '/list/',
             'method': 'GET',
             'body': None,
             'description': 'Retrieve all parent cases, regardless of active status.'
         },
         {
-            'Endpoint': '/parentcase/create/',
+            'Endpoint': '/create/',
             'method': 'POST',
             'body': {
                 'case_number': '',
@@ -36,13 +36,13 @@ def get_routes(request):
             'description': 'Create a new parent case.'
         },
         {
-            'Endpoint': '/parentcase/set_inactive/<str:case_num>/',
+            'Endpoint': '/set_inactive/<str:case_num>/',
             'method': 'POST',
             'body': None,
             'description': 'Set a parent case to inactive by case number.'
         },
         {
-            'Endpoint': '/parentcase/update/<str:case_num>/',
+            'Endpoint': '/update/<str:case_num>/',
             'method': 'POST',
             'body': {
                 'description': '',
