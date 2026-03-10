@@ -14,6 +14,7 @@ from user.decorators import group_required, role_required
 
 from .serializers import UserSerializer
 from .serializers import GroupSerializer
+from .models import UserProfile
 
 
 @api_view(['GET'])
@@ -23,13 +24,19 @@ def get_routes(request):
             'Endpoint': '/login/',
             'method': 'POST',
             'body': {'username': '', 'password': ''},
-            'description': 'Returns an authorization token and user information'
+            'description': 'Returns an authorization token and user information. If must_reset_password is true, user must call /reset-password/ before accessing other endpoints.'
         },
         {
             'Endpoint': '/signup/',
             'method': 'POST',
-            'body': {'username': '', 'password': '', 'email': '', 'first_name': '', 'last_name': ''},
+            'body': {'username': '', 'password': '', 'email': '', 'first_name': '', 'last_name': '', 'discord_id': '(optional)'},
             'description': 'Creates a new user and returns an authorization token and user information'
+        },
+        {
+            'Endpoint': '/reset-password/',
+            'method': 'POST',
+            'body': {'new_password': ''},
+            'description': 'Resets the password for users who must_reset_password is true (migrated users)'
         },
         {
             'Endpoint': '/test_token/',
@@ -90,7 +97,17 @@ def login(request):
     
     token, created = Token.objects.get_or_create(user=user)
     serializer = UserSerializer(instance=user)
-    return Response({"token": token.key, "user": serializer.data})
+    
+    # Check if user needs to reset password
+    must_reset = False
+    if hasattr(user, 'profile') and user.profile.must_reset_password:
+        must_reset = True
+    
+    return Response({
+        "token": token.key, 
+        "user": serializer.data,
+        "must_reset_password": must_reset
+    })
 
 @api_view(['POST'])
 def signup(request):
@@ -101,12 +118,58 @@ def signup(request):
         user.set_password(request.data['password'])
         user.save()
         
+        # Ensure profile exists (serializer should create it, but just in case)
+        if not hasattr(user, 'profile'):
+            discord_id = request.data.get('discord_id')
+            UserProfile.objects.create(user=user, discord_id=discord_id)
+        
         # New users start with NO roles - roles must be assigned by Lead/Manager
         # No automatic role assignment
 
         token = Token.objects.create(user=user)
         return Response({"token": token.key, "user": serializer.data})
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['POST'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def reset_password(request):
+    """
+    Allows a user to reset their password. 
+    Required for migrated users who have must_reset_password=True.
+    """
+    new_password = request.data.get('new_password')
+    
+    if not new_password:
+        return Response(
+            {"detail": "new_password is required."},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    if len(new_password) < 6:
+        return Response(
+            {"detail": "Password must be at least 6 characters."},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    user = request.user
+    user.set_password(new_password)
+    user.save()
+    
+    # Clear the must_reset_password flag
+    if hasattr(user, 'profile'):
+        user.profile.must_reset_password = False
+        user.profile.save()
+    
+    # Generate new token (old one invalidated by password change)
+    Token.objects.filter(user=user).delete()
+    token = Token.objects.create(user=user)
+    
+    return Response({
+        "detail": "Password reset successfully.",
+        "token": token.key
+    })
 
 @api_view(['GET'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])
