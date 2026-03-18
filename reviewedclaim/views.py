@@ -87,9 +87,52 @@ def get_pings_for_user(request, pk):
 @permission_classes([IsAuthenticated])
 @role_required('Lead')  # Lead and above (hierarchical)
 def list_reviewed_claims(request):
+    """
+    List reviewed claims with optional filtering.
+    
+    Query params:
+      - days=N (last N days)
+      - start_date=YYYY-MM-DD&end_date=YYYY-MM-DD
+      - user_id=N (filter by tech)
+      - limit=N (max results, default 100)
+      - offset=N (for pagination)
+    """
+    from datetime import datetime as dt
+    from django.utils import timezone as tz
+    
     claims = ReviewedClaim.objects.all()
+    
+    start_date_str = request.query_params.get('start_date')
+    end_date_str = request.query_params.get('end_date')
+    days_param = request.query_params.get('days')
+    user_id = request.query_params.get('user_id')
+    limit = int(request.query_params.get('limit', 100))
+    offset = int(request.query_params.get('offset', 0))
+    
+    if start_date_str and end_date_str:
+        try:
+            range_start = tz.make_aware(dt.strptime(start_date_str, '%Y-%m-%d'))
+            range_end = tz.make_aware(
+                dt.strptime(end_date_str, '%Y-%m-%d').replace(hour=23, minute=59, second=59)
+            )
+            claims = claims.filter(review_time__gte=range_start, review_time__lte=range_end)
+        except ValueError:
+            pass
+    elif days_param:
+        range_start = tz.now() - __import__('datetime').timedelta(days=int(days_param))
+        claims = claims.filter(review_time__gte=range_start)
+    
+    if user_id:
+        claims = claims.filter(Q(tech_id=int(user_id)) | Q(lead_id=int(user_id)))
+    
+    total_count = claims.count()
+    claims = claims.order_by('-review_time')[offset:offset + limit]
+    
     serializer = ReviewedClaimSerializer(claims, many=True)
-    return Response(serializer.data, status=status.HTTP_200_OK)
+    return Response({
+        'count': total_count,
+        'results': serializer.data,
+    }, status=status.HTTP_200_OK)
 
 @api_view(['POST'])
 @authentication_classes([SessionAuthentication, TokenAuthentication])
