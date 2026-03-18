@@ -2,10 +2,10 @@
 Migrate case data from old CaseClaim Discord bot SQL dump to CaseClaimAPI.
 
 Migrates:
-  - CheckedClaims  → ReviewedClaim
-  - CompletedClaims → CompleteClaim
-  - ActiveClaims    → ActiveClaim
-  - Feedback        → Used for ReviewedClaim comments
+  - CheckedClaims  -> ReviewedClaim
+  - CompletedClaims -> CompleteClaim
+  - ActiveClaims    -> ActiveClaim
+  - Feedback        -> Used for ReviewedClaim comments
 
 Usage:
   python manage.py migrate_case_data path/to/dump.sql
@@ -180,20 +180,20 @@ class Command(BaseCommand):
 
         self.stdout.write("Parsing SQL dump...")
 
-        # Build discord_id → Django User mapping
+        # Build discord_id -> Django User mapping
         discord_to_user = self.build_user_mapping()
 
         # Parse Feedback table for comments/severity
         feedback_map = self.parse_feedback(sql_text)
         self.stdout.write(f"  Parsed {len(feedback_map)} Feedback records")
 
-        # Migrate CheckedClaims → ReviewedClaim
+        # Migrate CheckedClaims -> ReviewedClaim
         self.migrate_reviewed_claims(sql_text, discord_to_user, feedback_map, dry_run)
 
-        # Migrate CompletedClaims → CompleteClaim
+        # Migrate CompletedClaims -> CompleteClaim
         self.migrate_complete_claims(sql_text, discord_to_user, dry_run)
 
-        # Migrate ActiveClaims → ActiveClaim
+        # Migrate ActiveClaims -> ActiveClaim
         self.migrate_active_claims(sql_text, discord_to_user, dry_run)
 
         self.stdout.write(self.style.SUCCESS("\nMigration complete!"))
@@ -205,11 +205,11 @@ class Command(BaseCommand):
         for profile in profiles:
             mapping[profile.discord_id] = profile.user
 
-        self.stdout.write(f"  Built user mapping: {len(mapping)} discord_id → User entries")
+        self.stdout.write(f"  Built user mapping: {len(mapping)} discord_id -> User entries")
         return mapping
 
     def parse_feedback(self, sql_text):
-        """Parse Feedback table into a dict: thread_id → {severity, description}."""
+        """Parse Feedback table into a dict: thread_id -> {severity, description}."""
         feedback_map = {}
         rows = parse_sql_values(sql_text, 'Feedback')
 
@@ -273,8 +273,8 @@ class Command(BaseCommand):
         return ''
 
     def migrate_reviewed_claims(self, sql_text, discord_to_user, feedback_map, dry_run):
-        """Migrate CheckedClaims → ReviewedClaim."""
-        self.stdout.write(self.style.NOTICE("\n--- Migrating CheckedClaims → ReviewedClaim ---"))
+        """Migrate CheckedClaims -> ReviewedClaim."""
+        self.stdout.write(self.style.NOTICE("\n--- Migrating CheckedClaims -> ReviewedClaim ---"))
 
         rows = parse_sql_values(sql_text, 'CheckedClaims')
         self.stdout.write(f"  Parsed {len(rows)} CheckedClaims rows")
@@ -380,8 +380,8 @@ class Command(BaseCommand):
             ))
 
     def migrate_complete_claims(self, sql_text, discord_to_user, dry_run):
-        """Migrate CompletedClaims → CompleteClaim."""
-        self.stdout.write(self.style.NOTICE("\n--- Migrating CompletedClaims → CompleteClaim ---"))
+        """Migrate CompletedClaims -> CompleteClaim."""
+        self.stdout.write(self.style.NOTICE("\n--- Migrating CompletedClaims -> CompleteClaim ---"))
 
         rows = parse_sql_values(sql_text, 'CompletedClaims')
         self.stdout.write(f"  Parsed {len(rows)} CompletedClaims rows")
@@ -449,8 +449,8 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(f"  CompleteClaim: {created} created, {skipped} skipped, {errors} errors"))
 
     def migrate_active_claims(self, sql_text, discord_to_user, dry_run):
-        """Migrate ActiveClaims → ActiveClaim."""
-        self.stdout.write(self.style.NOTICE("\n--- Migrating ActiveClaims → ActiveClaim ---"))
+        """Migrate ActiveClaims -> ActiveClaim."""
+        self.stdout.write(self.style.NOTICE("\n--- Migrating ActiveClaims -> ActiveClaim ---"))
 
         rows = parse_sql_values(sql_text, 'ActiveClaims')
         self.stdout.write(f"  Parsed {len(rows)} ActiveClaims rows")
