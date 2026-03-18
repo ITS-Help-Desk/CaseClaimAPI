@@ -147,10 +147,11 @@ def parse_timestamp(ts_str):
     if ts_str is None:
         return None
     ts_str = ts_str.strip()
+    from datetime import timezone as dt_timezone
     for fmt in ('%Y-%m-%d %H:%M:%S', '%Y-%m-%d %H:%M:%S.%f'):
         try:
             dt = datetime.strptime(ts_str, fmt)
-            return timezone.make_aware(dt, timezone.utc)
+            return dt.replace(tzinfo=dt_timezone.utc)
         except ValueError:
             continue
     return None
