@@ -61,20 +61,83 @@ def get_routes(request):
 @role_required('Lead')  # Lead and above only
 def get_summary(request):
     """
-    Get overall system statistics.
+    Get overall system statistics, optionally filtered by date range.
     
-    Returns counts and metrics across all case stages.
+    Query params:
+      - days=7 (filter reviewed claims to last N days)
+      - start_date=YYYY-MM-DD&end_date=YYYY-MM-DD (exact range)
+      - user_id=N (filter to specific user as tech)
+    Without date params, returns all-time totals.
     """
+    from datetime import datetime as dt
+    
     now = timezone.now()
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     week_start = today_start - timedelta(days=7)
     
+    # Determine date range filter
+    start_date_str = request.query_params.get('start_date')
+    end_date_str = request.query_params.get('end_date')
+    days_param = request.query_params.get('days')
+    user_id = request.query_params.get('user_id')
+    
+    reviewed_qs = ReviewedClaim.objects.all()
+    active_qs = ActiveClaim.objects.all()
+    complete_qs = CompleteClaim.objects.all()
+    
+    period_label = 'All Time'
+    
+    if start_date_str and end_date_str:
+        try:
+            range_start = timezone.make_aware(dt.strptime(start_date_str, '%Y-%m-%d'))
+            range_end = timezone.make_aware(
+                dt.strptime(end_date_str, '%Y-%m-%d').replace(hour=23, minute=59, second=59)
+            )
+            reviewed_qs = reviewed_qs.filter(review_time__gte=range_start, review_time__lte=range_end)
+            active_qs = active_qs.filter(claim_time__gte=range_start, claim_time__lte=range_end)
+            complete_qs = complete_qs.filter(complete_time__gte=range_start, complete_time__lte=range_end)
+            period_label = f'{start_date_str} to {end_date_str}'
+        except ValueError:
+            pass
+    elif days_param:
+        days = int(days_param)
+        range_start = now - timedelta(days=days)
+        reviewed_qs = reviewed_qs.filter(review_time__gte=range_start)
+        active_qs = active_qs.filter(claim_time__gte=range_start)
+        complete_qs = complete_qs.filter(complete_time__gte=range_start)
+        period_label = f'Last {days} days'
+    
+    if user_id:
+        reviewed_qs = reviewed_qs.filter(tech_id=int(user_id))
+        active_qs = active_qs.filter(user_id=int(user_id))
+        complete_qs = complete_qs.filter(user_id=int(user_id))
+    
+    total_reviewed = reviewed_qs.count()
+    
+    review_breakdown = {
+        'kudos': reviewed_qs.filter(status='kudos').count(),
+        'checked': reviewed_qs.filter(status='checked').count(),
+        'done': reviewed_qs.filter(status='done').count(),
+        'pinged_low': reviewed_qs.filter(status='pingedlow').count(),
+        'pinged_med': reviewed_qs.filter(status='pingedmed').count(),
+        'pinged_high': reviewed_qs.filter(status='pingedhigh').count(),
+        'acknowledged': reviewed_qs.filter(status='acknowledged').count(),
+        'resolved': reviewed_qs.filter(status='resolved').count(),
+    }
+    
+    total_pinged = (review_breakdown['pinged_low'] + 
+                    review_breakdown['pinged_med'] + 
+                    review_breakdown['pinged_high'] +
+                    review_breakdown['acknowledged'] +
+                    review_breakdown['resolved'])
+    
     summary = {
         'generated_at': now,
+        'period': period_label,
         'totals': {
-            'active_claims': ActiveClaim.objects.count(),
-            'pending_review': CompleteClaim.objects.count(),
-            'reviewed_claims': ReviewedClaim.objects.count(),
+            'active_claims': active_qs.count(),
+            'pending_review': complete_qs.count(),
+            'reviewed_claims': total_reviewed,
         },
         'today': {
             'claimed': ActiveClaim.objects.filter(claim_time__gte=today_start).count(),
@@ -86,27 +149,9 @@ def get_summary(request):
             'completed': CompleteClaim.objects.filter(complete_time__gte=week_start).count(),
             'reviewed': ReviewedClaim.objects.filter(review_time__gte=week_start).count(),
         },
-        'review_status_breakdown': {
-            'kudos': ReviewedClaim.objects.filter(status='kudos').count(),
-            'checked': ReviewedClaim.objects.filter(status='checked').count(),
-            'done': ReviewedClaim.objects.filter(status='done').count(),
-            'pinged_low': ReviewedClaim.objects.filter(status='pingedlow').count(),
-            'pinged_med': ReviewedClaim.objects.filter(status='pingedmed').count(),
-            'pinged_high': ReviewedClaim.objects.filter(status='pingedhigh').count(),
-            'acknowledged': ReviewedClaim.objects.filter(status='acknowledged').count(),
-            'resolved': ReviewedClaim.objects.filter(status='resolved').count(),
-        }
+        'review_status_breakdown': review_breakdown,
+        'ping_rate': round((total_pinged / total_reviewed * 100), 2) if total_reviewed > 0 else 0,
     }
-    
-    # Calculate ping rate
-    total_reviewed = summary['totals']['reviewed_claims']
-    total_pinged = (summary['review_status_breakdown']['pinged_low'] + 
-                    summary['review_status_breakdown']['pinged_med'] + 
-                    summary['review_status_breakdown']['pinged_high'] +
-                    summary['review_status_breakdown']['acknowledged'] +
-                    summary['review_status_breakdown']['resolved'])
-    
-    summary['ping_rate'] = round((total_pinged / total_reviewed * 100), 2) if total_reviewed > 0 else 0
     
     return Response(summary, status=status.HTTP_200_OK)
 
@@ -185,58 +230,90 @@ def get_leaderboard(request):
     """
     Get leaderboard ranking of top performers.
     
-    Ranks users by number of cases completed (reviewed).
+    Supports flexible date filtering via query params:
+      - days=7 (default, last N days)
+      - start_date=YYYY-MM-DD&end_date=YYYY-MM-DD (exact range)
+      - limit=10 (max results per board)
     """
-    # Get time range from query params (default: last 7 days)
-    days = int(request.query_params.get('days', 7))
+    from datetime import datetime as dt
+    
     limit = int(request.query_params.get('limit', 10))
     
-    start_date = timezone.now() - timedelta(days=days)
+    start_date_str = request.query_params.get('start_date')
+    end_date_str = request.query_params.get('end_date')
     
-    # Get tech leaderboard (by cases completed)
+    if start_date_str and end_date_str:
+        try:
+            start_date = timezone.make_aware(dt.strptime(start_date_str, '%Y-%m-%d'))
+            end_date = timezone.make_aware(
+                dt.strptime(end_date_str, '%Y-%m-%d').replace(hour=23, minute=59, second=59)
+            )
+            period_label = f'{start_date_str} to {end_date_str}'
+        except ValueError:
+            return Response(
+                {'error': 'Invalid date format. Use YYYY-MM-DD'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+    else:
+        days = int(request.query_params.get('days', 7))
+        end_date = timezone.now()
+        start_date = end_date - timedelta(days=days)
+        period_label = f'Last {days} days'
+    
+    base_qs = ReviewedClaim.objects.filter(
+        review_time__gte=start_date,
+        review_time__lte=end_date
+    )
+    
+    # Tech leaderboard: cases where tech got checked or kudos
     tech_stats = (
-        ReviewedClaim.objects
-        .filter(review_time__gte=start_date)
+        base_qs
+        .filter(status__in=['checked', 'kudos'])
         .values('tech_id', 'tech_id__username', 'tech_id__first_name', 'tech_id__last_name')
         .annotate(
             total_cases=Count('id'),
-            kudos=Count('id', filter=Q(status='kudos')),
-            pings=Count('id', filter=Q(status__in=['pingedlow', 'pingedmed', 'pingedhigh']))
+            kudos_count=Count('id', filter=Q(status='kudos')),
         )
         .order_by('-total_cases')[:limit]
     )
     
-    # Get lead leaderboard (by reviews given)
+    # Lead leaderboard: all reviews given, with status breakdown
     lead_stats = (
-        ReviewedClaim.objects
-        .filter(review_time__gte=start_date)
+        base_qs
         .values('lead_id', 'lead_id__username', 'lead_id__first_name', 'lead_id__last_name')
-        .annotate(reviews_given=Count('id'))
-        .order_by('-reviews_given')[:limit]
+        .annotate(
+            total_reviews=Count('id'),
+            kudos_count=Count('id', filter=Q(status='kudos')),
+            checks_count=Count('id', filter=Q(status='checked')),
+            pings_count=Count('id', filter=Q(status__in=['pingedlow', 'pingedmed', 'pingedhigh'])),
+            done_count=Count('id', filter=Q(status='done')),
+        )
+        .order_by('-total_reviews')[:limit]
     )
     
     leaderboard = {
-        'period': f'Last {days} days',
+        'period': period_label,
         'generated_at': timezone.now(),
         'tech_leaderboard': [
             {
                 'rank': idx + 1,
-                'user_id': entry['tech_id'],
-                'username': entry['tech_id__username'],
-                'name': f"{entry['tech_id__first_name']} {entry['tech_id__last_name']}".strip() or entry['tech_id__username'],
-                'total_cases': entry['total_cases'],
-                'kudos': entry['kudos'],
-                'pings': entry['pings'],
+                'id': entry['tech_id'],
+                'username': f"{entry['tech_id__first_name']} {entry['tech_id__last_name']}".strip() or entry['tech_id__username'],
+                'count': entry['total_cases'],
+                'kudosCount': entry['kudos_count'],
             }
             for idx, entry in enumerate(tech_stats)
         ],
         'lead_leaderboard': [
             {
                 'rank': idx + 1,
-                'user_id': entry['lead_id'],
-                'username': entry['lead_id__username'],
-                'name': f"{entry['lead_id__first_name']} {entry['lead_id__last_name']}".strip() or entry['lead_id__username'],
-                'reviews_given': entry['reviews_given'],
+                'id': entry['lead_id'],
+                'username': f"{entry['lead_id__first_name']} {entry['lead_id__last_name']}".strip() or entry['lead_id__username'],
+                'count': entry['total_reviews'],
+                'kudosCount': entry['kudos_count'],
+                'checksCount': entry['checks_count'],
+                'pingsCount': entry['pings_count'],
+                'doneCount': entry['done_count'],
             }
             for idx, entry in enumerate(lead_stats)
         ]
