@@ -31,7 +31,8 @@ SECRET_KEY = os.environ["SECRET_KEY"]
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ['DEBUG'] == 'true'
 
-ALLOWED_HOSTS = json.loads(os.environ["ALLOWED_HOSTS"])
+ALLOWED_HOSTS = json.loads(os.environ.get("ALLOWED_HOSTS", "[]"))
+ALLOWED_HOSTS += ["caseflow.sandiego.edu", "10.80.20.32"]
 
 
 # Application definition
